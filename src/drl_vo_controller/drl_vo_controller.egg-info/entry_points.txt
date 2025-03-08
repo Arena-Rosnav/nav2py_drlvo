@@ -1,3 +1,0 @@
-[console_scripts]
-controller = drl_vo_controller.drl_vo_controller:main
-

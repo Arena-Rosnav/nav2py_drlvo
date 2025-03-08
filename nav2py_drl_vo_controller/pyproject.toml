@@ -1,0 +1,18 @@
+[project]
+name = "nav2py_drl_vo_controller"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.10"
+dependencies = [
+    "lxml",
+    "pyyaml",
+    "stable-baselines3",
+    "numpy==1.26",
+    "torch",
+    "pandas",
+    "matplotlib",
+    "gym",
+    "transforms3d",
+    "shimmy"
+]

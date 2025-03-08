@@ -3,8 +3,8 @@ export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/humble/share/turtlebot3_gaz
 export LIBGL_ALWAYS_SOFTWARE=1
 source /usr/share/gazebo/setup.sh
 
-colcon build --symlink-install --base-paths src/
+colcon build --symlink-install 
 
 source /opt/ros/humble/setup.bash
 source install/setup.bash
-source install/nav2py_template_controller/venv/bin/activate
+source install/nav2py_drl_vo_controller/venv/bin/activate

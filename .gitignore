@@ -1,6 +1,12 @@
-log
+*.pyc
+*.egg-info/
+__pycache__
 build
+log
 install
-.venv
+nav2py
+ament_cmake_venv
+ament_cmake_uv
 *.weights
 *.zip
+colcon_build

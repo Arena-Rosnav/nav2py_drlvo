@@ -1,33 +1,73 @@
-# Nav2_pyif_drl_vo
+# nav2py_template
 
-This repository integrates the ROS 2 Navigation Stack (Nav2) with a Deep Reinforcement Learning-based Velocity Obstacle (DRL-VO) control policy, enabling autonomous navigation through environments with static and dynamic obstacles.
+This project provides a Python-based controller interface for interacting with `nav2` in ROS2.
 
-## Installation
+## 📌 Installation
 
-1. **Clone the Repository**:
+### **1. Install ROS2 (Humble) and Navigation 2**
+- [ROS2 Installation Guide](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html)
+- [Nav2 Installation Guide](https://docs.nav2.org/getting_started/index.html)
 
-   ```bash
-   git clone https://github.com/Tonmanhkien/Nav2_pyif_drl_vo.git
-   cd Nav2_pyif_drl_vo
+### **2. Clone this repository into your workspace**
+```bash
+mkdir -p ~/nav2_ws/src
+cd ~/nav2_ws/src
+git clone git@github.com:zenghjian/nav2py_template.git
+```
 
-2. **Dowload PPO model**:
+### **3. Build the workspace**
+```bash
+cd ~/nav2_ws
+source /opt/ros/humble/setup.bash
+colcon build
+```
 
-   ```bash
-   wget https://github.com/TempleRAIL/drl_vo_nav/blob/drl_vo/drl_vo/src/model/drl_vo.zip -O drl_vo.zip
+### **4. Source the workspace**
+```bash
+source ~/nav2_ws/install/setup.bash
+```
 
-  Then add it into model folder inside drl_controller folder
-  
-3. **Install Necessary Libraries**:
+### **5. Run the Nav2 demo launch**
+```bash
+export TURTLEBOT3_MODEL=waffle
+export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/humble/share/turtlebot3_gazebo/models
+ros2 launch nav2_bringup tb3_simulation_launch.py headless:=False params_file:=$(pwd)/src/nav2py_template/my_nav2_params.yaml
+```
 
-   
-   Ensure you have the required Python libraries installed:
-   
-   ```bash
-   pip install stable-baselines3 numpy==1.26
+---
 
-4. **Run**:
-   ```bash
-   cd /Nav2_pyif_drl_vo
-   . colcon_build
-   ros2 launch nav2_bringup tb3_simulation_launch.py params_file:=<>/src/param.yaml headless:=True
-   
+## 🔧 Development
+
+### **Code Structure**
+```
+nav2py_template/
+│── src/
+│   ├── nav2py_template/
+│   │   ├── nav2py_template_controller/
+│   │   │   ├── __init__.py
+│   │   │   ├── __main__.py  # Main entry point, calls the planner
+│   │   │   ├── planner.py   # Custom planner implementation
+│   │   ├── template_controller.cpp  # C++ controller
+│   │   ├── template_controller.hpp  # C++ controller header file
+│── README.md
+│── setup.py
+```
+
+### **Development Guide**
+1. **Add your Python code in the `src/nav2py_template/nav2py_template_controller/` directory.**
+   - Entry file: `__main__.py`
+   - Implement `planner.py` according to your navigation requirements.
+
+2. **If additional input data is needed**, modify the following files:
+   - `template_controller.cpp`
+   - `template_controller.hpp`
+   - `__main__.py`
+
+   **The current example only supports transmitting:**
+   - Robot position
+   - Velocity
+   - Goal
+
+
+## 📧 Contact
+For any inquiries, please contact [Huajian Zeng](mailto:zenghuajian97@gmail.com).
