@@ -6,7 +6,7 @@ log
 install
 nav2py
 ament_cmake_venv
-ament_cmake_uv
+ament_cmake_venv_uv
 *.weights
 *.zip
 colcon_build
