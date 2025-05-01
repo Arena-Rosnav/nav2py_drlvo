@@ -58,13 +58,18 @@ ament_target_dependencies(nav2py_drl_vo_controller
 )
 
 install(TARGETS nav2py_drl_vo_controller
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
+ARCHIVE DESTINATION lib
+LIBRARY DESTINATION lib
+RUNTIME DESTINATION bin
 )
 
 install(DIRECTORY include/
   DESTINATION include/
+)
+
+install(
+  DIRECTORY model
+  DESTINATION venv/share/
 )
 
 if(BUILD_TESTING)

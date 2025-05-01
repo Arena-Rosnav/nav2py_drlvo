@@ -98,7 +98,7 @@
    ss << "    z: " << velocity.angular.z << "\n";
    
    // Send the data
-   nav2py_send("data", {ss.str()});
+   nav2py_send("odom", {ss.str()});
    
    RCLCPP_INFO(logger_, "Data sent to Python side");
  }
