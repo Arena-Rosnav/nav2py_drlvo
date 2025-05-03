@@ -9,6 +9,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 from stable_baselines3 import PPO
 
+from .. import LaserScan, Path, Pose
 from . import custom_cnn_full
 
 if not hasattr(np, 'float'):
@@ -17,7 +18,7 @@ if not hasattr(np, 'float'):
 sys.modules['custom_cnn_full'] = custom_cnn_full
 
 
-def find_closest_point(path, x, seg=-1):
+def find_closest_point(path: Path, x, seg=-1):
     """
     Given a global path (as a list of dicts with a 'pose' key) and a point x (np.array([x, y])),
     find the closest point on the path.
@@ -27,7 +28,7 @@ def find_closest_point(path, x, seg=-1):
     seg_min = -1
 
     if seg == -1:
-        for i in range(len(path) - 1):
+        for i in range(len(path.poses) - 1):
             pt, dist, s = find_closest_point(path, x, i)
             if dist < dist_min:
                 pt_min = pt
@@ -35,8 +36,14 @@ def find_closest_point(path, x, seg=-1):
                 seg_min = s
         return pt_min, dist_min, seg_min
     else:
-        p_start = np.array([path[seg]['pose']['position']['x'], path[seg]['pose']['position']['y']])
-        p_end = np.array([path[seg + 1]['pose']['position']['x'], path[seg + 1]['pose']['position']['y']])
+        p_start = np.array([
+            path.poses[seg].position.x,
+            path.poses[seg].position.y,
+        ])
+        p_end = np.array([
+            path.poses[seg + 1].position.x,
+            path.poses[seg + 1].position.y,
+        ])
         v = p_end - p_start
         length_seg = np.linalg.norm(v)
         if length_seg == 0:
@@ -53,7 +60,7 @@ def find_closest_point(path, x, seg=-1):
         return pt_min, dist_min, seg
 
 
-def pure_pursuit_subgoal(path, pose, lookahead=2.0):
+def pure_pursuit_subgoal(path: Path, pose: Pose, lookahead=2.0):
     """
     Compute the subgoal (to be used as cnn_goal) given:
     - path: a global plan as a list of dictionaries (each with a 'pose' key)
@@ -63,9 +70,16 @@ def pure_pursuit_subgoal(path, pose, lookahead=2.0):
     - goal_local: a 2-element numpy array representing the subgoal coordinates in the robot's local frame.
     """
     # Extract the robot's position and orientation from the pose
-    x = np.array([pose["position"]["x"], pose["position"]["y"]])
-    quat = [pose["orientation"]["x"], pose["orientation"]["y"],
-            pose["orientation"]["z"], pose["orientation"]["w"]]
+    x = np.array([
+        pose.position.x,
+        pose.position.y,
+    ])
+    quat = [
+        pose.orientation.x,
+        pose.orientation.y,
+        pose.orientation.z,
+        pose.orientation.w,
+    ]
     (_, _, theta) = Rotation.from_quat(quat).as_euler('xyz')
 
     # Find the closest point on the path to the robot's current position
@@ -75,27 +89,37 @@ def pure_pursuit_subgoal(path, pose, lookahead=2.0):
     if dist > lookahead:
         goal = pt
     else:
-        seg_max = len(path) - 2
-        p_end = np.array([path[seg + 1]['pose']['position']['x'],
-                          path[seg + 1]['pose']['position']['y']])
+        seg_max = len(path.poses) - 2
+        p_end = np.array([
+            path.poses[seg + 1].position.x,
+            path.poses[seg + 1].position.y,
+        ])
         dist_end = np.linalg.norm(x - p_end)
         current_seg = seg
         while dist_end < lookahead and current_seg < seg_max:
             current_seg += 1
-            p_end = np.array([path[current_seg + 1]['pose']['position']['x'],
-                              path[current_seg + 1]['pose']['position']['y']])
+            p_end = np.array([
+                path.poses[current_seg + 1].position.x,
+                path.poses[current_seg + 1].position.y
+            ])
             dist_end = np.linalg.norm(x - p_end)
         if dist_end < lookahead:
             # Use the very end of the path if the lookahead circle contains the end
-            goal = np.array([path[seg_max + 1]['pose']['position']['x'],
-                            path[seg_max + 1]['pose']['position']['y']])
+            goal = np.array([
+                path.poses[seg_max + 1].position.x,
+                path.poses[seg_max + 1].position.y
+            ])
         else:
             # Find intersection along the segment
             pt_seg, _, seg_used = find_closest_point(path, x, current_seg)
-            p_start = np.array([path[seg_used]['pose']['position']['x'],
-                                path[seg_used]['pose']['position']['y']])
-            p_end = np.array([path[seg_used + 1]['pose']['position']['x'],
-                              path[seg_used + 1]['pose']['position']['y']])
+            p_start = np.array([
+                path.poses[seg_used].position.x,
+                path.poses[seg_used].position.y,
+            ])
+            p_end = np.array([
+                path.poses[seg_used + 1].position.x,
+                path.poses[seg_used + 1].position.y
+            ])
             v = p_end - p_start
             length_seg = np.linalg.norm(v)
             if length_seg != 0:
@@ -118,14 +142,17 @@ def pure_pursuit_subgoal(path, pose, lookahead=2.0):
 
 
 class ControllerV2:
-    def __init__(self, model_path: typing.Union[str, io.BufferedIOBase]):
+    def __init__(self, model_path: typing.Union[str, io.BufferedIOBase], logger: logging.Logger):
         self.model = PPO.load(model_path)
-        self.logger = logging.getLogger('controller_server')
+        self.logger = logger
 
-        self.global_path_data = []
+        self.global_path_data = Path(poses=[])
         self.goal_pose = None
         self.position_all = []
         self.scan_buffer = []
+
+        self.max_speed = 0.5
+        self.speed_limit = 0.5
 
     @classmethod
     def upsample_scan(cls, scan, target_length=720):
@@ -135,10 +162,12 @@ class ControllerV2:
         upsampled_scan = np.interp(x_new, x_old, scan)
         return upsampled_scan
 
-    def scan_callback(self, msg):
+    def scan_callback(self, msg: LaserScan):
+        if not msg.ranges.size:
+            return
+
         scan_arr = np.array(msg.ranges, dtype=np.float32)
-        if len(scan_arr) == 360:
-            scan_arr = self.upsample_scan(scan_arr, target_length=720)
+        scan_arr = self.upsample_scan(scan_arr, target_length=720)
         self.scan_buffer.append(scan_arr)
         if len(self.scan_buffer) > 10:
             self.scan_buffer.pop(0)
@@ -175,8 +204,10 @@ class ControllerV2:
         if self.global_path_data is not None:
             subgoal = pure_pursuit_subgoal(self.global_path_data, pose, lookahead=2.0)
         elif self.goal_pose is not None:
-            subgoal = np.array([self.goal_pose["pose"]["position"]["x"],
-                                self.goal_pose["pose"]["position"]["y"]], dtype=np.float32)
+            subgoal = np.array([
+                self.goal_pose.position.x,
+                self.goal_pose.position.y,
+            ], dtype=np.float32)
         else:
             raise RuntimeError('no global path and no goal pose exist')
 
@@ -212,7 +243,7 @@ class ControllerV2:
 
         # Map the action output to command velocities.
         vx_min = 0
-        vx_max = 0.5
+        vx_max = self.speed_limit
         vz_min = -2
         vz_max = 2
 
@@ -222,23 +253,26 @@ class ControllerV2:
         return linear_x, angular_z
 
     @classmethod
-    def _handleGlobalPlan(cls, global_path):
+    def _handleGlobalPlan(cls, global_path: Path):
         position_x = []
         position_y = []
         i = 0
         while (i <= len(global_path.poses) - 1):
-            position_x.append(global_path.poses[i].pose.position.x)
-            position_y.append(global_path.poses[i].pose.position.y)
+            position_x.append(global_path.poses[i].position.x)
+            position_y.append(global_path.poses[i].position.y)
             i = i + 1
         position_all = [list(double) for double in zip(position_x, position_y)]
 
         return position_all
 
-    def setPath(self, global_plan):
+    def setPath(self, global_plan: Path):
         self.goal_pose = global_plan.poses[-1]
         self.global_path_data = global_plan
         self.position_all = self._handleGlobalPlan(global_plan)
         return
 
     def setSpeedLimit(self, speed_limit, is_percentage):
-        return
+        if is_percentage:
+            self.speed_limit = self.max_speed * speed_limit / 100.0
+        else:
+            self.speed_limit = speed_limit

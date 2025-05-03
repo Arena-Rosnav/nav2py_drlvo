@@ -48,7 +48,7 @@ set(dependencies
 )
 
 add_library(nav2py_drl_vo_controller SHARED
-        src/template_controller.cpp)
+        src/drl_vo_controller.cpp)
 
 # prevent pluginlib from using boost
 target_compile_definitions(nav2py_drl_vo_controller PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
