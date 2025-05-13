@@ -1,32 +1,25 @@
-# Nav2_pyif_drl_vo
+# nav2py_drl_vo
 
 This repository integrates the ROS 2 Navigation Stack (Nav2) with a Deep Reinforcement Learning-based Velocity Obstacle (DRL-VO) control policy, enabling autonomous navigation through environments with static and dynamic obstacles.
 
 ## Installation
 
-1. **Clone the Repository**:
+1. **Install nav2py and deps**
 
    ```bash
-   git clone https://github.com/Tonmanhkien/Nav2_pyif_drl_vo.git
-   cd Nav2_pyif_drl_vo
-
-2. **Dowload PPO model**:
-
-   ```bash
-   wget https://github.com/TempleRAIL/drl_vo_nav/blob/drl_vo/drl_vo/src/model/drl_vo.zip -O drl_vo.zip
-
-  Then add it into model folder inside drl_controller folder
-  
-3. **Install Necessary Libraries**:
-
+      git clone https://github.com/voshch/nav2py
+      git clone https://github.com/voshch/ament_cmake_venv
+      git clone https://github.com/voshch/ament_cmake_venv_uv
+   ```
    
-   Ensure you have the required Python libraries installed:
-   
-   ```bash
-   pip install stable-baselines3 numpy==1.26
+2. **Clone the Repository**:
 
-4. **Run**:
    ```bash
-   cd /Nav2_pyif_drl_vo
-   . colcon_build
-   ros2 launch nav2_bringup tb3_simulation_launch.py params_file:=<>/src/param.yaml headless:=True
+   git clone https://github.com/Arena-Rosnav/nav2py_drlvo
+
+3. Build workspace.
+
+4. **Run** (in this directory):
+   ```bash
+   ros2 launch nav2_bringup tb4_simulation_launch.py params_file:=nav2_params.yaml headless:=True
+   ```
