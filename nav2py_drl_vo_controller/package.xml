@@ -3,7 +3,7 @@
 <package format="3">
   <name>nav2py_drl_vo_controller</name>
   <version>0.0.0</version>
-  <description>template for nav2 integration of standalone python controller plugin</description>
+  <description>DRL-VO for nav2 integration: https://github.com/TempleRAIL/drl_vo_nav</description>
   <maintainer email="dev@voshch.dev">voshch</maintainer>
   <license>MIT</license>
 
